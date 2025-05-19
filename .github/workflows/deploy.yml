@@ -1,49 +1,39 @@
-name: Deploy to GitHub Pages
-
+name: Publish the Lichess API Demo app
 on:
   push:
     branches:
       - trunk
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
+concurrency:
+  group: pages
+  cancel-in-progress: true
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build project
-        run: npm run build
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: |
-            index.html
-            dist
-
   deploy:
-    needs: build
-    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: npm install
+        run: npm install
+      - name: npm run prod
+        run: npm run prod
+      - name: configure-pages
+        uses: actions/configure-pages@v5
+      - name: upload-artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - name: Validate artifact
+        run: ls -al dist  # List files in dist to ensure the artifact exists
+      - name: Deploy pages
         uses: actions/deploy-pages@v4
+        id: deployment
