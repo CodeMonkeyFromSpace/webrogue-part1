@@ -36,7 +36,6 @@ function draw() {
     return thisRow.map((cell, x) => {
       if (x === player.x && y === player.y) return '@';
       const terrainType = terrainTypes[cell];
-      console.log("terrainType", terrainType)
       return `<span style="color:${terrainType.fg}">${cell}</span>`
     }).join('')
   }).join('\n');
