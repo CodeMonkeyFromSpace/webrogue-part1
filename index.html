@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ASCII Roguelike</title>
+  <style>
+    body {
+      background: black;
+      color: lime;
+      font-family: monospace;
+      font-size: 16px;
+      margin: 0;
+      overflow: hidden;
+    }
+    pre {
+      line-height: 1;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <pre id="game"></pre>
+
+  <script>
+    const width = 80;
+    const height = 25;
+    const map = Array.from({ length: height }, () => Array(width).fill('#'));
+    const gameEl = document.getElementById('game');
+
+    // Player
+    let player = { x: 0, y: 0 };
+
+    // Random room and corridor generation
+    function generateDungeon() {
+      const rooms = [];
+      const maxRooms = 10;
+
+      function createRoom() {
+        const w = Math.floor(Math.random() * 10) + 5;
+        const h = Math.floor(Math.random() * 6) + 4;
+        const x = Math.floor(Math.random() * (width - w - 1)) + 1;
+        const y = Math.floor(Math.random() * (height - h - 1)) + 1;
+        return { x, y, w, h };
+      }
+
+      function carveRoom(room) {
+        for (let y = room.y; y < room.y + room.h; y++) {
+          for (let x = room.x; x < room.x + room.w; x++) {
+            map[y][x] = '.';
+          }
+        }
+      }
+
+      function carveCorridor(x1, y1, x2, y2) {
+        if (Math.random() < 0.5) {
+          for (let x = Math.min(x1, x2); x <= Math.max(x1, x2); x++) map[y1][x] = '.';
+          for (let y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) map[y][x2] = '.';
+        } else {
+          for (let y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) map[y][x1] = '.';
+          for (let x = Math.min(x1, x2); x <= Math.max(x1, x2); x++) map[y2][x] = '.';
+        }
+      }
+
+      for (let i = 0; i < maxRooms; i++) {
+        const room = createRoom();
+        carveRoom(room);
+
+        if (rooms.length > 0) {
+          const prev = rooms[rooms.length - 1];
+          carveCorridor(
+            Math.floor(prev.x + prev.w / 2),
+            Math.floor(prev.y + prev.h / 2),
+            Math.floor(room.x + room.w / 2),
+            Math.floor(room.y + room.h / 2)
+          );
+        } else {
+          player.x = Math.floor(room.x + room.w / 2);
+          player.y = Math.floor(room.y + room.h / 2);
+        }
+
+        rooms.push(room);
+      }
+    }
+
+    function draw() {
+      const view = map.map((row, y) =>
+        row.map((cell, x) => (x === player.x && y === player.y ? '@' : cell)).join('')
+      ).join('\n');
+      gameEl.textContent = view;
+    }
+
+    function move(dx, dy) {
+      const nx = player.x + dx;
+      const ny = player.y + dy;
+      if (map[ny]?.[nx] === '.') {
+        player.x = nx;
+        player.y = ny;
+      }
+    }
+
+    document.addEventListener('keydown', e => {
+      switch (e.key) {
+        case 'ArrowUp': move(0, -1); break;
+        case 'ArrowDown': move(0, 1); break;
+        case 'ArrowLeft': move(-1, 0); break;
+        case 'ArrowRight': move(1, 0); break;
+      }
+      draw();
+    });
+
+    generateDungeon();
+    draw();
+  </script>
+</body>
+</html>
