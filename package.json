@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "go": "serve",
+    "start": "npm run build && npm run go"
+  },
+  "devDependencies": {
+    "serve": "^14.2.4",
+    "typescript": "^5.8.3"
+  }
+}
