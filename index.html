@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>ASCII Roguelike</title>
+  <meta charset="UTF-8">
+  <title>8-Direction ASCII Roguelike</title>
   <style>
     body {
       background: black;
@@ -10,7 +10,6 @@
       font-family: monospace;
       font-size: 16px;
       margin: 0;
-      overflow: hidden;
     }
     pre {
       line-height: 1;
@@ -20,17 +19,27 @@
 </head>
 <body>
   <pre id="game"></pre>
-
   <script>
+    const controls = {
+      q: [-1, -1], // NW
+      w: [0, -1],  // N
+      e: [1, -1],  // NE
+      a: [-1, 0],  // W
+      s: [0, 0],   // Wait
+      d: [1, 0],   // E
+      z: [-1, 1],  // SW
+      x: [0, 1],   // S
+      c: [1, 1]    // SE
+    };
+
     const width = 80;
     const height = 25;
     const map = Array.from({ length: height }, () => Array(width).fill('#'));
     const gameEl = document.getElementById('game');
 
-    // Player
     let player = { x: 0, y: 0 };
+    let enemy = { x: 0, y: 0 };
 
-    // Random room and corridor generation
     function generateDungeon() {
       const rooms = [];
       const maxRooms = 10;
@@ -80,32 +89,54 @@
 
         rooms.push(room);
       }
+
+      const last = rooms[rooms.length - 1];
+      enemy.x = Math.floor(last.x + last.w / 2);
+      enemy.y = Math.floor(last.y + last.h / 2);
     }
 
     function draw() {
-      const view = map.map((row, y) =>
-        row.map((cell, x) => (x === player.x && y === player.y ? '@' : cell)).join('')
+      const output = map.map((row, y) =>
+        row.map((cell, x) => {
+          if (x === player.x && y === player.y) return '@';
+          if (x === enemy.x && y === enemy.y) return 'E';
+          return cell;
+        }).join('')
       ).join('\n');
-      gameEl.textContent = view;
+      gameEl.textContent = output;
     }
 
-    function move(dx, dy) {
-      const nx = player.x + dx;
-      const ny = player.y + dy;
-      if (map[ny]?.[nx] === '.') {
-        player.x = nx;
-        player.y = ny;
+    function isWalkable(x, y) {
+      return map[y]?.[x] === '.' || (x === player.x && y === player.y);
+    }
+
+    function moveEntity(entity, dx, dy) {
+      const nx = entity.x + dx;
+      const ny = entity.y + dy;
+      if (isWalkable(nx, ny)) {
+        entity.x = nx;
+        entity.y = ny;
       }
     }
 
-    document.addEventListener('keydown', e => {
-      switch (e.key) {
-        case 'ArrowUp': move(0, -1); break;
-        case 'ArrowDown': move(0, 1); break;
-        case 'ArrowLeft': move(-1, 0); break;
-        case 'ArrowRight': move(1, 0); break;
-      }
+    function playerTurn(dx, dy) {
+      moveEntity(player, dx, dy);
+      enemyTurn();
       draw();
+    }
+
+    function enemyTurn() {
+      const dx = Math.sign(player.x - enemy.x);
+      const dy = Math.sign(player.y - enemy.y);
+      moveEntity(enemy, dx, dy); // Move diagonally if needed
+    }
+
+    document.addEventListener('keydown', (e) => {
+      const move = controls[e.key];
+      if (move) {
+        e.preventDefault();
+        playerTurn(...move);
+      }
     });
 
     generateDungeon();
