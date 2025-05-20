@@ -13,6 +13,11 @@ const mapInfo = {
 };
 const {mapWidth, mapHeight, playerStart, terrain, items, mobs } = mapInfo;
 
+const cols = 80;
+const rows = 25;
+const cellWidth = 10;
+const cellHeight = 20;
+
 const controls = {
   q: [-1, -1], // NW
   w: [0, -1],  // N
@@ -24,23 +29,46 @@ const controls = {
   x: [0, 1],   // S
   c: [1, 1]    // SE
 };
-  
-const gameEl = document.getElementById('game');
+
+
+
+const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+let ctx;
+if (canvas !== null) {
+  if ((canvas instanceof HTMLCanvasElement)){
+    ctx = canvas.getContext("2d");
+  }
+}
 
 let player = { x: playerStart.x, y: playerStart.y };
 
-
 function draw() {
-  const output = terrain.map((row, y) => {
+  let output = terrain.map((row, y) => {
     const thisRow = [... row];
     return thisRow.map((cell, x) => {
       if (x === player.x && y === player.y) return '@';
-      const terrainType = terrainTypes[cell];
-      return `<span style="color:${terrainType.fg}">${cell}</span>`
+      return cell;
     }).join('')
   }).join('\n');
-  if (gameEl){
-    gameEl.innerHTML = output;
+  // todo: combine the code above with the code below, properly; I think we're going in circles
+  const charArray2d = output.split('\n').map(line => [...line]);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let y = 0; y < mapWidth; y++) {
+    for (let x = 0; x < mapHeight; x++) {
+      const char = charArray2d[y][x];
+      const terrainType = terrainTypes[char];
+      if (terrainType) {
+        ctx.fillStyle = terrainType.fg;
+      } else {
+        if (char === '@') {
+          ctx.fillStyle = "yellow";
+        } 
+        else {
+          ctx.fillStyle = "red";
+        }
+      }
+      ctx.fillText(char, x * cellWidth, y * cellHeight);
+    }
   }
 }
 
@@ -53,6 +81,10 @@ function isWalkable(x, y) {
 function moveEntity(entity, dx, dy) {
   const nx = entity.x + dx;
   const ny = entity.y + dy;
+  // TODO: revisit this; dx and dy could be anything, and
+  // moveEntity wil put them at their destination as long as 
+  // that destination square (x + dx, y + dy) is walkable.. meaning any squares in between
+  // (x, y) and (x + dx, y + dy) could be completely impassable and we'd teleport right through.
   if (isWalkable(nx, ny)) {
     entity.x = nx;
     entity.y = ny;
@@ -63,6 +95,9 @@ function playerTurn(dx, dy) {
   moveEntity(player, dx, dy);
   draw();
 }
+
+ctx.font = `${cellHeight}px monospace`;
+ctx.textBaseline = "top";
 
 document.addEventListener('keydown', (e) => {
   const move: [number, number] = controls[e.key];
