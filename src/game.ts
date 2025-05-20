@@ -1,3 +1,4 @@
+import { getDirectionName } from './util.js';
 window.addEventListener('DOMContentLoaded', async () => {
   const canvas = document.getElementById("canvas") as HTMLCanvasElement;
   const ctx = canvas.getContext("2d")!;
@@ -17,6 +18,14 @@ window.addEventListener('DOMContentLoaded', async () => {
     items: mapj.items,
     mobs: mapj.mobs
   };
+  const infoPanel = document.getElementById("info1");
+
+  function echoCommand(text: string) {
+    const line = document.createElement("div");
+    line.textContent = `> ${text}`;
+    infoPanel!.appendChild(line);
+    infoPanel!.scrollTop = infoPanel!.scrollHeight; // Auto-scroll to bottom
+  }
 
   const { mapWidth, mapHeight, playerStart, terrain, items, mobs } = mapInfo;
   let viewportWidth = 0;
@@ -56,6 +65,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   function playerTurn(dx: number, dy: number) {
+    const direction = getDirectionName(dx, dy);
+    echoCommand(direction);
     moveEntity(player, dx, dy);
     drawMap();
   }
@@ -81,6 +92,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
     }
   }
+  
   document.addEventListener('keydown', (e) => {
     const move = controls[e.key];
     if (Array.isArray(move) && move.length === 2) {
