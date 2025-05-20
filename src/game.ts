@@ -18,7 +18,17 @@ window.addEventListener('DOMContentLoaded', async () => {
     items: mapj.items,
     mobs: mapj.mobs
   };
-  const infoPanel = document.getElementById("info1");
+  const infoPanel = document.getElementById("info1") as HTMLDivElement;
+
+  function appendMessageToInfoPanel(text: string, color?: string) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    if (color) {
+      div.style.color = color;
+    }
+    infoPanel.appendChild(div);
+    infoPanel.scrollTop = infoPanel.scrollHeight; // auto-scroll to bottom
+  }
 
   function echoCommand(text: string) {
     const line = document.createElement("div");
@@ -63,11 +73,22 @@ window.addEventListener('DOMContentLoaded', async () => {
       entity.y = ny;
     }
   }
-
+  
   function playerTurn(dx: number, dy: number) {
     const direction = getDirectionName(dx, dy);
     echoCommand(direction);
+
     moveEntity(player, dx, dy);
+
+    const terrainChar = terrain[player.y][player.x];
+    const tType = terrainTypes[terrainChar];
+    if (tType) {
+      const msg = `You are ${tType.sameSquareInteraction} ${tType.description}.`;
+      appendMessageToInfoPanel(msg, tType.fg);
+    } else {
+      appendMessageToInfoPanel("You are in unknown terrain.", "gray");
+    }
+
     drawMap();
   }
 
@@ -92,7 +113,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
     }
   }
-  
+
   document.addEventListener('keydown', (e) => {
     const move = controls[e.key];
     if (Array.isArray(move) && move.length === 2) {
