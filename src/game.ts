@@ -50,9 +50,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   };
 
   function resizeCanvasToFit() {
-    const rect = canvas.getBoundingClientRect();
-    viewportWidth = Math.floor(rect.width / cellWidth);
-    viewportHeight = Math.floor(rect.height / cellHeight);
+    viewportWidth = Math.floor(canvas.offsetWidth / cellWidth);
+    viewportHeight = Math.floor(canvas.offsetHeight / cellHeight);
+
     canvas.width = viewportWidth * cellWidth;
     canvas.height = viewportHeight * cellHeight;
     ctx.font = `${cellHeight}px monospace`;
@@ -104,7 +104,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     for (let y = startY; y < endY; y++) {
       for (let x = startX; x < endX; x++) {
-        let char = terrain[y][x];
+        let char = terrain[y]?.[x] ?? " ";
+
         if (x === player.x && y === player.y) char = "@";
 
         const terrainType = terrainTypes[char];
@@ -121,8 +122,17 @@ window.addEventListener('DOMContentLoaded', async () => {
       playerTurn(move[0], move[1]);
     }
   });
-  window.addEventListener("resize", resizeCanvasToFit);
-  resizeCanvasToFit(); // <-- Initial draw
+
+  // we need this timeout or resize happens incorrectly
+  let resizeTimeout: number | undefined;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = window.setTimeout(() => {
+      requestAnimationFrame(resizeCanvasToFit);
+    }, 100);
+  });
+
+  resizeCanvasToFit();
 });
 
 export {};
