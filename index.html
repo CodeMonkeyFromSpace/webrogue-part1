@@ -24,32 +24,49 @@
     }
 
     .panel {
-      border: 1px solid #444;
+      border: 3px solid #0FF;
+      border-radius: 8px;
       padding: 4px;
       overflow: auto;
       background: #222;
     }
 
-    #canvas {
-      width: 100%;
-      height: 100%;
-      border: 1px solid cyan;
-      display: block;
-      box-sizing: border-box;
+    #lowerLeft {
+      grid-column: 1 / 2;
+      grid-row: 2 / 2;
+    }
+
+    #lowerRight {
+      grid-column: 2 / 2;
+      grid-row: 2 / 2;
+
+    }
+
+    #upperRight {
+      grid-column: 2 / 2;
+      grid-row: 1 / 2;
+    }
+
+    #canvasDiv {
       grid-column: 1 / 2;
       grid-row: 1 / 2;
     }
 
-    #debug { border-color: #ff00ff; }
-    #info1 { border-color: #00ff00; }
-    #info2 { border-color: #ff9900; }
+    #canvas {
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
   </style>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><text y=%2214%22 font-size=%2216%22>🌟</text></svg>">
 
 </head>
 <body>
   <div class="grid" id="grid">
-    <canvas id="canvas"></canvas>
+    <div id="canvasDiv">
+      <canvas id="canvas" class="panel"></canvas>
+    </div>
     <div id="debug" class="panel">Debug Panel</div>
     <div id="info1" class="panel">Info Panel 1</div>
     <div id="info2" class="panel">Info Panel 2</div>
