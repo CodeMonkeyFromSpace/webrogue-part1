@@ -1,4 +1,4 @@
-name: Publish the Lichess API Demo app
+name: Publish to github pages
 on:
   push:
     branches:
