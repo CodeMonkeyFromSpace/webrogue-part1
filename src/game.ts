@@ -1,111 +1,95 @@
+window.addEventListener('DOMContentLoaded', async () => {
+  const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+  const ctx = canvas.getContext("2d")!;
+  const cellWidth = 10;
+  const cellHeight = 20;
 
-let mapData = await import('./map1.json', { with: { type: 'json' } });
-const mapj = mapData.default;
-const terrainTypeData = await import('./terrainTypes.json', { with: { type: 'json' } });
-const terrainTypes = terrainTypeData.default;
-const mapInfo = {
+  const mapData = await import('./map1.json', { with: { type: 'json' } });
+  const mapj = mapData.default;
+  const terrainTypeData = await import('./terrainTypes.json', { with: { type: 'json' } });
+  const terrainTypes = terrainTypeData.default;
+
+  const mapInfo = {
     mapWidth: mapj.terrainRows[0].length,
     mapHeight: mapj.terrainRows.length,
-    playerStart: {"x": 1, "y": 1},
+    playerStart: { x: 1, y: 1 },
     terrain: mapj.terrainRows,
     items: mapj.items,
     mobs: mapj.mobs
-};
-const {mapWidth, mapHeight, playerStart, terrain, items, mobs } = mapInfo;
+  };
 
-const cols = 80;
-const rows = 25;
-const cellWidth = 10;
-const cellHeight = 20;
+  const { mapWidth, mapHeight, playerStart, terrain, items, mobs } = mapInfo;
+  let viewportWidth = 0;
+  let viewportHeight = 0;
 
-const controls = {
-  q: [-1, -1], // NW
-  w: [0, -1],  // N
-  e: [1, -1],  // NE
-  a: [-1, 0],  // W
-  s: [0, 0],   // Wait
-  d: [1, 0],   // E
-  z: [-1, 1],  // SW
-  x: [0, 1],   // S
-  c: [1, 1]    // SE
-};
+  let player = { x: playerStart.x, y: playerStart.y };
 
+  const controls = {
+    q: [-1, -1], w: [0, -1], e: [1, -1],
+    a: [-1, 0],  s: [0, 0],  d: [1, 0],
+    z: [-1, 1],  x: [0, 1],  c: [1, 1]
+  };
 
-
-const canvas = document.getElementById("canvas") as HTMLCanvasElement;
-let ctx;
-if (canvas !== null) {
-  if ((canvas instanceof HTMLCanvasElement)){
-    ctx = canvas.getContext("2d");
+  function resizeCanvasToFit() {
+    const rect = canvas.getBoundingClientRect();
+    viewportWidth = Math.floor(rect.width / cellWidth);
+    viewportHeight = Math.floor(rect.height / cellHeight);
+    canvas.width = viewportWidth * cellWidth;
+    canvas.height = viewportHeight * cellHeight;
+    ctx.font = `${cellHeight}px monospace`;
+    ctx.textBaseline = "top";
+    drawMap();
   }
-}
 
-let player = { x: playerStart.x, y: playerStart.y };
+  function isWalkable(x: number, y: number) {
+    const terrainType = terrainTypes[terrain[y]?.[x]];
+    return terrainType?.isPassable || (player.x == x && player.y == y);
+  }
 
-function draw() {
-  let output = terrain.map((row, y) => {
-    const thisRow = [... row];
-    return thisRow.map((cell, x) => {
-      if (x === player.x && y === player.y) return '@';
-      return cell;
-    }).join('')
-  }).join('\n');
-  // todo: combine the code above with the code below, properly; I think we're going in circles
-  const charArray2d = output.split('\n').map(line => [...line]);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for (let y = 0; y < mapWidth; y++) {
-    for (let x = 0; x < mapHeight; x++) {
-      const char = charArray2d[y][x];
-      const terrainType = terrainTypes[char];
-      if (terrainType) {
-        ctx.fillStyle = terrainType.fg;
-      } else {
-        if (char === '@') {
-          ctx.fillStyle = "yellow";
-        } 
-        else {
-          ctx.fillStyle = "red";
-        }
-      }
-      ctx.fillText(char, x * cellWidth, y * cellHeight);
+  function moveEntity(entity: { x: number, y: number }, dx: number, dy: number) {
+    const nx = entity.x + dx;
+    const ny = entity.y + dy;
+    if (isWalkable(nx, ny)) {
+      entity.x = nx;
+      entity.y = ny;
     }
   }
-}
 
-function isWalkable(x, y) {
-  const currentTerrain = terrain[y]?.[x];
-  const terrainType = terrainTypes[currentTerrain];
-  return terrainType.isPassable || ( player.x == x && player.y == y);
-}
-
-function moveEntity(entity, dx, dy) {
-  const nx = entity.x + dx;
-  const ny = entity.y + dy;
-  // TODO: revisit this; dx and dy could be anything, and
-  // moveEntity wil put them at their destination as long as 
-  // that destination square (x + dx, y + dy) is walkable.. meaning any squares in between
-  // (x, y) and (x + dx, y + dy) could be completely impassable and we'd teleport right through.
-  if (isWalkable(nx, ny)) {
-    entity.x = nx;
-    entity.y = ny;
+  function playerTurn(dx: number, dy: number) {
+    moveEntity(player, dx, dy);
+    drawMap();
   }
-}
 
-function playerTurn(dx, dy) {
-  moveEntity(player, dx, dy);
-  draw();
-}
+  function drawMap() {
+    const halfX = Math.floor(viewportWidth / 2);
+    const halfY = Math.floor(viewportHeight / 2);
+    const startX = Math.min(Math.max(0, player.x - halfX), mapWidth - viewportWidth);
+    const startY = Math.min(Math.max(0, player.y - halfY), mapHeight - viewportHeight);
+    const endX = Math.min(mapWidth, startX + viewportWidth);
+    const endY = Math.min(mapHeight, startY + viewportHeight);
 
-ctx.font = `${cellHeight}px monospace`;
-ctx.textBaseline = "top";
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-document.addEventListener('keydown', (e) => {
-  const move: [number, number] = controls[e.key];
-  if (move) {
-    e.preventDefault();
-    playerTurn(...move);
+    for (let y = startY; y < endY; y++) {
+      for (let x = startX; x < endX; x++) {
+        let char = terrain[y][x];
+        if (x === player.x && y === player.y) char = "@";
+
+        const terrainType = terrainTypes[char];
+        ctx.fillStyle = terrainType?.fg || (char === "@" ? "yellow" : "red");
+        ctx.fillText(char, (x - startX) * cellWidth, (y - startY) * cellHeight);
+      }
+    }
   }
+  document.addEventListener('keydown', (e) => {
+    const move = controls[e.key];
+    if (Array.isArray(move) && move.length === 2) {
+      e.preventDefault();
+      playerTurn(move[0], move[1]);
+    }
+  });
+  window.addEventListener("resize", resizeCanvasToFit);
+  resizeCanvasToFit(); // <-- Initial draw
 });
 
-draw();
 export {};
